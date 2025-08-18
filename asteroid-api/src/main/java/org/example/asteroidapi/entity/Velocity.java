@@ -1,22 +1,18 @@
-package org.example.asteroidapi.response;
+package org.example.asteroidapi.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.asteroidapi.entity.Asteroid;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NeoFeedResponse
+public class Velocity
 {
-    @JsonProperty("near_earth_objects")
-    private Map<String, List<Asteroid>> asteroids;
+    @JsonProperty("kilometers_per_second")
+    private String kilometersPerSecond;
 }

@@ -1,4 +1,4 @@
-package org.example.asteroidapi.model;
+package org.example.asteroidapi.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -11,8 +11,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Velocity
+public class CloseApproachData
 {
-    @JsonProperty("kilometers_per_second")
-    private String kilometersPerSecond;
+    @JsonProperty("relative_velocity")
+    private Velocity velocity;
+
+    @JsonProperty("miss_distance")
+    private Distance distance;
 }
