@@ -1,8 +1,6 @@
 package org.example.asteroidapi.service;
-import lombok.RequiredArgsConstructor;
 import org.example.asteroidapi.entity.Asteroid;
 import org.example.asteroidapi.model.AsteroidInfo;
-import org.example.asteroidapi.model.AsteroidInfoMapper;
 import org.example.asteroidapi.response.NeoFeedResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,14 +24,11 @@ public class AsteroidService
     private final RestClient restClient;
 
 
-    private final AsteroidInfoMapper asteroidInfoMapper;
-
     @Autowired
-    public AsteroidService(RestClient.Builder builder, AsteroidInfoMapper asteroidInfoMapper) {
+    public AsteroidService(RestClient.Builder builder) {
         this.restClient = builder
                 .baseUrl(baseUrl)
                 .build();
-        this.asteroidInfoMapper = asteroidInfoMapper;
     }
 
     public Map<String, List<AsteroidInfo>> getAsteroids(String start, String end) {
@@ -47,21 +42,16 @@ public class AsteroidService
         NeoFeedResponse response = restClient.get().uri(uri).retrieve().body(NeoFeedResponse.class);
 
         assert response != null;
-        return response.getAsteroids().entrySet().stream()
-                .collect(HashMap::new, (m, e) ->
-                        m.put(e.getKey(), e.getValue().stream().map(asteroidInfoMapper).toList()), HashMap::putAll);
 
-//        Map<String, List<AsteroidInfo>> result = new HashMap<>();
-//        for (Map.Entry<String, List<Asteroid>> entry : response.getAsteroids().entrySet()) {
-//            String date = entry.getKey();
-//            List<AsteroidInfo> transformedAsteroids = new ArrayList<>();
-//
-//            for (Asteroid asteroid : entry.getValue()) {
-//                transformedAsteroids.add(asteroidInfoMapper.apply(asteroid));
-//            }
-//
-//            result.put(date, transformedAsteroids);
-//        }
+        Map<String, List<AsteroidInfo>> result = new HashMap<>();
 
+        for (Map.Entry<String, List<Asteroid>> entry : response.getAsteroids().entrySet()) {
+            String date = entry.getKey();
+
+            List<AsteroidInfo> transformedAsteroids = entry.getValue().stream().map(AsteroidInfo::map).toList();
+
+            result.put(date, transformedAsteroids);
+        }
+        return result;
     }
 }
