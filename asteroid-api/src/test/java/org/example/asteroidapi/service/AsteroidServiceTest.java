@@ -1,6 +1,5 @@
 package org.example.asteroidapi.service;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.asteroidapi.client.AsteroidClient;
 import org.example.asteroidapi.entity.*;
 import org.example.asteroidapi.model.AsteroidInfo;
 import org.example.asteroidapi.response.NeoFeedResponse;
@@ -9,67 +8,95 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.client.RestClient;
 import java.util.List;
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AsteroidServiceTest {
-    
+class AsteroidServiceTest
+{
     @Mock
-    private RestClient.Builder restClientBuilder;
-    
-    @Mock
-    private RestClient restClient;
-    
-    @Mock
-    private RestClient.RequestHeadersUriSpec requestHeadersUriSpec;
-    
-    @Mock
-    private RestClient.ResponseSpec responseSpec;
-    
+    private AsteroidClient apiClient;
+
     private AsteroidService asteroidService;
-    private ObjectMapper objectMapper;
-    
+
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
-        
-        // Mock the RestClient.Builder chain
-        when(restClientBuilder.baseUrl(anyString())).thenReturn(restClientBuilder);
-        when(restClientBuilder.build()).thenReturn(restClient);
-        
-        // Mock the RestClient call chain
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-        
-        asteroidService = new AsteroidService(restClientBuilder, "https://api.nasa.gov/neo/rest/v1", "DEMO_KEY");
+        asteroidService = new AsteroidService(
+                apiClient,
+                "https://api.nasa.gov/neo/rest/v1",
+                "DEMO_KEY");
     }
-    
+
     @Test
-    void shouldGetAsteroids() {
+    void shouldTransformAsteroid() {
         //Given
         String start = "2024-09-08";
-        
-        DiameterRange diameterRange = new DiameterRange(1.0, 2.0);
-        Diameter diameter = new Diameter(diameterRange);
-        Velocity velocity = new Velocity("1000");
-        Distance distance = new Distance("10000");
-        CloseApproachData closeApproachData = new CloseApproachData(velocity, distance);
-        Asteroid asteroid = new Asteroid("Asteroid", diameter, List.of(closeApproachData), false);
-        
+        Asteroid asteroid = new Asteroid("Asteroid", 1.0, 3.0, "1000", "2000", false);
         NeoFeedResponse response = new NeoFeedResponse(Map.of(start, List.of(asteroid)));
-        
-        // Mock the response
-        when(responseSpec.body(NeoFeedResponse.class)).thenReturn(response);
-        
+
+        when(apiClient.fetchAsteroids(anyString())).thenReturn(response);
+
         //When
         Map<String, List<AsteroidInfo>> result = asteroidService.getAsteroids(start, start);
-        
+        AsteroidInfo asteroidInfoResult = result.get(start).getFirst();
+        AsteroidInfo expected = new AsteroidInfo("Asteroid", 2.0, false, "1000", "2000");
+
         //Then
+        assertEquals(1, result.size());
+        assertEquals(expected, asteroidInfoResult);
+
+        verify(apiClient).fetchAsteroids("https://api.nasa.gov/neo/rest/v1/feed?start_date=2024-09-08&end_date=2024-09-08&api_key=DEMO_KEY");
+    }
+
+    @Test
+    void shouldTransformMultipleAsteroids() {
+        //Given
+        String start = "2024-09-08";
+        String end = "2024-09-12";
+        Asteroid asteroid1 = new Asteroid("Asteroid", 1.0, 3.0, "1000", "2000", false);
+        Asteroid asteroid2 = new Asteroid("Asteroid 2", 3.0, 3.0, "800", "5000", true);
+        Asteroid asteroid3 = new Asteroid("Asteroid 3", 5.0, 3.0, "35000", "69000", true);
+
+        List<Asteroid> asteroids1 = List.of(asteroid1, asteroid3);
+        List<Asteroid> asteroids2 = List.of(asteroid2);
+
+        NeoFeedResponse response = new NeoFeedResponse(Map.of(start, asteroids1, end, asteroids2));
+
+        when(apiClient.fetchAsteroids(anyString())).thenReturn(response);
+
+        //When
+        Map<String, List<AsteroidInfo>> result = asteroidService.getAsteroids(start, end);
+
+        //Then
+        assertEquals(2, result.size());
+
+        List<AsteroidInfo> asteroidsForStart = result.get(start);
+        assertEquals(2, asteroidsForStart.size());
+        assertThat(asteroidsForStart).isEqualTo(List.of(
+                new AsteroidInfo("Asteroid", 2.0, false, "1000", "2000"),
+                new AsteroidInfo("Asteroid 3", 4.0, true, "35000", "69000")));
+
+        List<AsteroidInfo> asteroidsForEnd = result.get(end);
+        assertEquals(1, asteroidsForEnd.size());
+        assertThat(asteroidsForEnd).isEqualTo(List.of(
+                new AsteroidInfo("Asteroid 2", 3.0, true, "800", "5000")));
+
+        verify(apiClient).fetchAsteroids("https://api.nasa.gov/neo/rest/v1/feed?start_date=2024-09-08&end_date=2024-09-12&api_key=DEMO_KEY");
+    }
+
+    @Test
+    void shouldThrowWhenResponseIsNull() {
+        //Given
+        when(apiClient.fetchAsteroids(anyString())).thenReturn(null);
+
+        //When & Then
+        assertThrows(IllegalStateException.class, () -> asteroidService.getAsteroids("2024-09-08", "2024-09-08"));
+        verifyNoMoreInteractions(apiClient);
     }
 }

@@ -26,4 +26,11 @@ public class Asteroid
 
     @JsonProperty("is_potentially_hazardous_asteroid")
     private boolean isHazardous;
+
+    public Asteroid(String name, double min, double max, String velocity, String distance, boolean isHazardous) {
+        this.name = name;
+        this.diameter = new Diameter(new DiameterRange(min, max));
+        this.approachData = List.of(new CloseApproachData(new Velocity(velocity), new Distance(distance)));
+        this.isHazardous = isHazardous;
+    }
 }

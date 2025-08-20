@@ -25,7 +25,7 @@ public class AsteroidService
         this.apiClient = apiClient;
     }
 
-    public Map<String, List<AsteroidInfo>> getAsteroids(String start, String end) {
+    public Map<String, List<AsteroidInfo>> getAsteroids(String start, String end, boolean dangerous) {
         String uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path("/feed")
                 .queryParam("start_date", start)
@@ -34,15 +34,16 @@ public class AsteroidService
                 .toUriString();
 
         NeoFeedResponse response = apiClient.fetchAsteroids(uri);
-
-        assert response != null;
-
+        if (response == null) throw new IllegalStateException("Response is null");
         Map<String, List<AsteroidInfo>> result = new HashMap<>();
 
-        for (Map.Entry<String, List<Asteroid>> entry : response.getAsteroids().entrySet()) {
+        for (Map.Entry<String, List<Asteroid>> entry : response.getAsteroids().entrySet())
+        {
             String date = entry.getKey();
 
-            List<AsteroidInfo> transformedAsteroids = entry.getValue().stream().map(AsteroidInfo::map).toList();
+            List<AsteroidInfo> transformedAsteroids = dangerous?
+                    entry.getValue().stream().filter(Asteroid::isHazardous).map(AsteroidInfo::map).toList() :
+                    entry.getValue().stream().map(AsteroidInfo::map).toList();
 
             result.put(date, transformedAsteroids);
         }
