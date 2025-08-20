@@ -1,13 +1,12 @@
 package org.example.asteroidapi.service;
+import org.example.asteroidapi.client.AsteroidClient;
 import org.example.asteroidapi.entity.Asteroid;
 import org.example.asteroidapi.model.AsteroidInfo;
 import org.example.asteroidapi.response.NeoFeedResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,20 +14,15 @@ import java.util.Map;
 @Service
 public class AsteroidService
 {
-    @Value("${api.key}")
-    private String apiKey;
-
-    @Value("${base.url}")
-    private String baseUrl;
-
-    private final RestClient restClient;
-
+    private final String apiKey;
+    private final String baseUrl;
+    private final AsteroidClient apiClient;
 
     @Autowired
-    public AsteroidService(RestClient.Builder builder) {
-        this.restClient = builder
-                .baseUrl(baseUrl)
-                .build();
+    public AsteroidService(AsteroidClient apiClient, @Value("${base.url}") String baseUrl, @Value("${api.key}") String apiKey) {
+        this.apiKey = apiKey;
+        this.baseUrl = baseUrl;
+        this.apiClient = apiClient;
     }
 
     public Map<String, List<AsteroidInfo>> getAsteroids(String start, String end) {
@@ -39,7 +33,7 @@ public class AsteroidService
                 .queryParam("api_key", apiKey)
                 .toUriString();
 
-        NeoFeedResponse response = restClient.get().uri(uri).retrieve().body(NeoFeedResponse.class);
+        NeoFeedResponse response = apiClient.fetchAsteroids(uri);
 
         assert response != null;
 
