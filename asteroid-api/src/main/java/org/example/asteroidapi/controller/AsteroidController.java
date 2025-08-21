@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -15,8 +16,8 @@ public class AsteroidController
     private final AsteroidService asteroidService;
 
     @GetMapping("/{start}/{end}")
-    public ResponseEntity<?> getAsteroids(@PathVariable String start, @PathVariable String end,
-    @RequestParam(value = "dangerous", required = false) boolean dangerous) {
+    public ResponseEntity<Map<String, List<AsteroidInfo>>> getAsteroids(@PathVariable String start, @PathVariable String end,
+                                                                        @RequestParam(value = "dangerous", required = false) boolean dangerous) {
         return ResponseEntity.ok(asteroidService.getAsteroids(start, end, dangerous));
     }
 }

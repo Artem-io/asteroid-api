@@ -45,7 +45,7 @@ public class AsteroidService
                     entry.getValue().stream().filter(Asteroid::isHazardous).map(AsteroidInfo::map).toList() :
                     entry.getValue().stream().map(AsteroidInfo::map).toList();
 
-            result.put(date, transformedAsteroids);
+            if(!transformedAsteroids.isEmpty()) result.put(date, transformedAsteroids);
         }
         return result;
     }
